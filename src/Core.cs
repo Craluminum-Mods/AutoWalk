@@ -2,6 +2,7 @@ using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.Client.NoObf;
 using Vintagestory.API.Config;
+using System;
 
 [assembly: ModInfo("Auto Walk")]
 
@@ -24,7 +25,8 @@ class Core : ModSystem
     private void OnGameTick(float delta, ICoreClientAPI capi)
     {
         if (!autoWalk) return;
-        var keyEvent = new KeyEvent { KeyCode = (int)GlKeys.W };
+        var hotkey = capi.Input.GetHotKeyByCode("walkforward");
+        var keyEvent = new KeyEvent { KeyCode = hotkey.CurrentMapping.KeyCode, KeyCode2 = hotkey.CurrentMapping.SecondKeyCode };
         var clientMain = capi.World as ClientMain;
         clientMain.CallMethod("OnKeyDown", keyEvent);
     }
