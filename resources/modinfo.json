@@ -1,0 +1,9 @@
+{
+    "side": "client",
+    "type": "code",
+    "modid": "autowalk",
+    "name": "Auto Walk",
+    "description": "Adds a key for auto walk",
+    "authors": ["Craluminum2413"],
+    "version": "1.0.0"
+}
