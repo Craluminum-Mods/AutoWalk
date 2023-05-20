@@ -2,7 +2,6 @@ using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.Client.NoObf;
 using Vintagestory.API.Config;
-using System;
 
 [assembly: ModInfo("Auto Walk")]
 
@@ -10,7 +9,11 @@ namespace AutoWalk;
 
 class Core : ModSystem
 {
-    bool autoWalk;
+    private bool AutoWalk
+    {
+        get => ClientSettings.Inst.GetBoolSetting("autowalk");
+        set => ClientSettings.Inst.Bool["autowalk"] = value;
+    }
 
     public override bool ShouldLoad(EnumAppSide forSide) => forSide == EnumAppSide.Client;
 
@@ -18,22 +21,42 @@ class Core : ModSystem
     {
         base.StartClientSide(capi);
         capi.Input.RegisterHotKey("autowalk", Lang.Get("autowalk:toggle-autowalk"), GlKeys.V, HotkeyType.MovementControls);
-        capi.Input.SetHotKeyHandler("autowalk", ToggleAutoWalk);
-        capi.Event.RegisterGameTickListener(d => OnGameTick(d, capi), 100);
+        capi.Input.SetHotKeyHandler("autowalk", keyCombination => ToggleAutoWalk(keyCombination, capi));
+        capi.Event.KeyUp += f => OnKeyUp(f, capi);
+        AutoWalk = false;
     }
 
-    private void OnGameTick(float delta, ICoreClientAPI capi)
+    private void OnKeyUp(KeyEvent e, ICoreClientAPI capi)
     {
-        if (!autoWalk) return;
-        var hotkey = capi.Input.GetHotKeyByCode("walkforward");
-        var keyEvent = new KeyEvent { KeyCode = hotkey.CurrentMapping.KeyCode, KeyCode2 = hotkey.CurrentMapping.SecondKeyCode };
-        var clientMain = capi.World as ClientMain;
-        clientMain.CallMethod("OnKeyDown", keyEvent);
+        e.Handled = false;
+        var _walkforward = GetKeyEvent(capi, "walkforward");
+        if (e.KeyCode == _walkforward.KeyCode && e.KeyCode2 == _walkforward.KeyCode2)
+        {
+            AutoWalk = false;
+        }
     }
 
-    private bool ToggleAutoWalk(KeyCombination t1)
+    private bool ToggleAutoWalk(KeyCombination keyCombination, ICoreClientAPI capi)
     {
-        autoWalk = !autoWalk;
-        return true;
+        AutoWalk = !AutoWalk;
+
+        switch (AutoWalk)
+        {
+            case true:
+                (capi.World as ClientMain).CallMethod("OnKeyDown", GetKeyEvent(capi, "walkforward"));
+                return true;
+            case false:
+                (capi.World as ClientMain).CallMethod("OnKeyUp", GetKeyEvent(capi, "walkforward"));
+                return true;
+        }
     }
+
+    private static KeyEvent GetKeyEvent(ICoreClientAPI capi, string hotkeyCode) => new()
+    {
+        KeyCode = capi.Input.GetHotKeyByCode(hotkeyCode).CurrentMapping.KeyCode,
+        KeyCode2 = capi.Input.GetHotKeyByCode(hotkeyCode).CurrentMapping.SecondKeyCode,
+        CtrlPressed = capi.Input.GetHotKeyByCode(hotkeyCode).CurrentMapping.Ctrl,
+        AltPressed = capi.Input.GetHotKeyByCode(hotkeyCode).CurrentMapping.Alt,
+        ShiftPressed = capi.Input.GetHotKeyByCode(hotkeyCode).CurrentMapping.Shift
+    };
 }
