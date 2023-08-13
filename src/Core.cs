@@ -3,44 +3,40 @@ using Vintagestory.API.Common;
 using Vintagestory.Client.NoObf;
 using Vintagestory.API.Config;
 
-[assembly: ModInfo("Auto Walk")]
+[assembly: ModInfo(name: "Auto Walk", modID: "autowalk", Side = "Client")]
 
 namespace AutoWalk;
 
 class Core : ModSystem
 {
-    private bool AutoWalk
-    {
-        get => ClientSettings.Inst.GetBoolSetting("autowalk");
-        set => ClientSettings.Inst.Bool["autowalk"] = value;
-    }
-
-    public override bool ShouldLoad(EnumAppSide forSide) => forSide == EnumAppSide.Client;
+    private bool Enabled { get; set; }
+    private static string Name => Constants.ToggleName(Lang.Get("autowalk:AutoWalk"));
 
     public override void StartClientSide(ICoreClientAPI capi)
     {
         base.StartClientSide(capi);
-        capi.Input.RegisterHotKey("autowalk", Lang.Get("autowalk:toggle-autowalk"), GlKeys.V, HotkeyType.MovementControls);
-        capi.Input.SetHotKeyHandler("autowalk", keyCombination => ToggleAutoWalk(keyCombination, capi));
-        capi.Event.KeyUp += f => OnKeyUp(f, capi);
-        AutoWalk = false;
+        capi.Input.RegisterHotKey("autowalk", Name, GlKeys.V, HotkeyType.MovementControls);
+        capi.Input.SetHotKeyHandler("autowalk", _ => Toggle(capi));
+        capi.Event.KeyUp += e => OnKeyUp(e, capi);
+        capi.World.Logger.Event("started '{0}' mod", Mod.Info.Name);
     }
 
     private void OnKeyUp(KeyEvent e, ICoreClientAPI capi)
     {
         e.Handled = false;
-        var _walkforward = GetKeyEvent(capi, "walkforward");
+        KeyEvent _walkforward = GetKeyEvent(capi, "walkforward");
         if (e.KeyCode == _walkforward.KeyCode && e.KeyCode2 == _walkforward.KeyCode2)
         {
-            AutoWalk = false;
+            Enabled = false;
         }
     }
 
-    private bool ToggleAutoWalk(KeyCombination keyCombination, ICoreClientAPI capi)
+    private bool Toggle(ICoreClientAPI capi)
     {
-        AutoWalk = !AutoWalk;
+        Enabled = !Enabled;
+        capi.TriggerChatMessage(Constants.StringToggle(Enabled, Name));
 
-        switch (AutoWalk)
+        switch (Enabled)
         {
             case true:
                 (capi.World as ClientMain).CallMethod("OnKeyDown", GetKeyEvent(capi, "walkforward"));
