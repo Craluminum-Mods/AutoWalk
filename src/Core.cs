@@ -7,10 +7,10 @@ using Vintagestory.API.Config;
 
 namespace AutoWalk;
 
-class Core : ModSystem
+public class Core : ModSystem
 {
     private bool Enabled { get; set; }
-    private static string Name => Constants.ToggleName(Lang.Get("autowalk:AutoWalk"));
+    private static string Name => Lang.Get("autowalk:Toggle", Lang.Get("autowalk:AutoWalk"));
 
     public override void StartClientSide(ICoreClientAPI capi)
     {
@@ -34,7 +34,6 @@ class Core : ModSystem
     private bool Toggle(ICoreClientAPI capi)
     {
         Enabled = !Enabled;
-        capi.TriggerChatMessage(Constants.StringToggle(Enabled, Name));
 
         switch (Enabled)
         {
